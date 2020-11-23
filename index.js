@@ -2,6 +2,9 @@ const express = require('express');
 const path = require ('path');
 const exphbs = require('express-handlebars')
 const app = express();
+const homeRoute = require ('./routes/home')
+const addRoute = require ('./routes/add.js')
+const courseRoute = require('./routes/courses')
 
 const hbs = exphbs.create({
     defaultLayout: 'main',
@@ -10,15 +13,13 @@ const hbs = exphbs.create({
 app.engine('hbs', hbs.engine) //регистрируем движок в экспресс
 app.set('view engine', 'hbs') //используем движок
 app.set('views', 'views') //место где хранятся все шаблоны html
+app.use(express.static('public'))
+app.use(express.urlencoded({extended: true}))
+app.use('/',homeRoute) //register router
+app.use('/add',addRoute)//register router
+app.use('/courses',courseRoute)//register router
 
 
-app.get('/', (req,res) => {
-    res.render('index') //указываем страницу для рендера
-})
-
-app.get('/about', (req,res)=> {
-    res.render('about') //указываем страницу для рендера
-})
 
 
 const PORT = process.env.PORT || 3000;
