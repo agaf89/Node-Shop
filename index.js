@@ -5,7 +5,7 @@ const Handlebars = require('handlebars')
 const exphbs = require('express-handlebars')
 const app = express();
 const session = require('express-session')
-
+const MongoStore = require('connect-mongodb-session')(session)
 
 const homeRoute = require ('./routes/home')
 const cardRoute = require('./routes/card')
@@ -16,6 +16,13 @@ const authRoute = require('./routes/auth')
 const {allowInsecurePrototypeAccess} = require('@handlebars/allow-prototype-access')
 const User = require('./models/user')
 const varMiddleware = require('./middleware/variables')
+const url = 'mongodb://agafonov:89027983557Stas89@cluster0-shard-00-00.f2crf.mongodb.net:27017,cluster0-shard-00-01.f2crf.mongodb.net:27017,cluster0-shard-00-02.f2crf.mongodb.net:27017/node?ssl=true&replicaSet=atlas-nye10j-shard-0&authSource=admin&retryWrites=true&w=majority'
+const userMiddleware = require('./middleware/user')
+const store = new MongoStore({
+    collection: 'sessions',
+    uri: url
+})
+
 
 app.engine('hbs', exphbs({
     handlebars: allowInsecurePrototypeAccess(Handlebars),
@@ -24,21 +31,15 @@ app.engine('hbs', exphbs({
 }));
 app.set('view engine', 'hbs') //используем движок
 app.set('views', 'views') //место где хранятся все шаблоны html
-app.use( async (req, res, next)=>{
-    try {
-        const user = await User.findById('5fbd4a18f3b3e316404f8896')
-        req.user = user 
-        next()
-    } catch (e) {
-        console.log(e)
-    }
-})
+
 app.use(session({
     secret: 'some secret value',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    store
 }))
 app.use(varMiddleware)
+app.use(userMiddleware)
 
 
 
@@ -54,17 +55,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start (){
     try {
-        const url = 'mongodb://agafonov:89027983557Stas89@cluster0-shard-00-00.f2crf.mongodb.net:27017,cluster0-shard-00-01.f2crf.mongodb.net:27017,cluster0-shard-00-02.f2crf.mongodb.net:27017/node?ssl=true&replicaSet=atlas-nye10j-shard-0&authSource=admin&retryWrites=true&w=majority'
         await mongoose.connect(url, {useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
-        const candidate = await User.findOne()
-        if (!candidate){
-            const user = new User({
-                email: 'agafonov@mail.ru',
-                name: 'Agafonov',
-                cart: {items: []}
-            })
-            await user.save()
-        }
         
         app.listen(PORT, ()=>{
             console.log('Server has been started');
